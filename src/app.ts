@@ -16,7 +16,6 @@ app.message(async ({ message, say }) => {
 });
 
 (async () => {
-  const port = Number(process.env.PORT) || 3000;
-  await app.start(port);
-  console.log(`⚡️ Bolt app (Socket Mode) running on http://localhost:${port}`);
+  await app.start();
+  console.log(`Bbot running in (Socket Mode) running `);
 })();
