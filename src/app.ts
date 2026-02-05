@@ -2,17 +2,21 @@ import "dotenv/config";
 import { App } from "@slack/bolt";
 
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  token: process.env.SLACK_BOT_TOKEN!,
+  socketMode: true,
+  appToken: process.env.SLACK_APP_TOKEN!,
+  signingSecret: process.env.SLACK_SIGNING_SECRET!,
 });
 
-app.message("hello", async ({ message, say }) => {
-  const userMessage = message as any;
-  await say(`Hey there <@${userMessage.user}> !`);
+app.message(async ({ message, say }) => {
+  if ("text" in message && message.user) {
+    console.log(`Received: "${message.text}" from user ${message.user}`);
+    await say(`Hey <@${message.user}>, I got your message!`);
+  }
 });
 
 (async () => {
-  const port = process.env.PORT || 3000;
+  const port = Number(process.env.PORT) || 3000;
   await app.start(port);
-  console.log(`Bbot up and running on port ${port}`);
+  console.log(`⚡️ Bolt app (Socket Mode) running on http://localhost:${port}`);
 })();
