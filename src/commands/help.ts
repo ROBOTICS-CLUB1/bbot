@@ -10,7 +10,7 @@ export function registerHelpCommand(app: App): void {
       text: [
         "*Available commands:*",
         "`/bbot ping` - check if bot is alive",
-        "`/bbot ping` - check if bot is alive",
+        "`/bbot help` - show this message",
       ].join("\n"),
     });
   });
