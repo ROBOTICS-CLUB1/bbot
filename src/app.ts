@@ -2,6 +2,7 @@ import "dotenv/config";
 import { App } from "@slack/bolt";
 import { startSchdeuledAnnouncements } from "./schedulers/reminders";
 import { setupMemberOnboarding } from "./listeners/member_joined";
+import { registerCommands } from "./commands/index";
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN!,
@@ -11,6 +12,7 @@ const app = new App({
 });
 
 setupMemberOnboarding(app);
+registerCommands(app);
 
 app.message(async ({ message, say }) => {
   if ("text" in message && message.user) {
