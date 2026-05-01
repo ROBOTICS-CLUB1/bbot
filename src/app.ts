@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { App } from "@slack/bolt";
+import { startSchdeuledAnnouncements } from "./schedulers/reminders";
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN!,
@@ -18,4 +19,5 @@ app.message(async ({ message, say }) => {
 (async () => {
   await app.start();
   console.log(`Bbot running in (Socket Mode) running `);
+  startSchdeuledAnnouncements(app);
 })();
