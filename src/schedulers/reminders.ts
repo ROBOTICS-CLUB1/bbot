@@ -1,26 +1,64 @@
 import cron from "node-cron";
+import cronParser from "cron-parser";
 import { App } from "@slack/bolt";
+import { Reminder } from "../db";
 
-export function startSchdeuledAnnouncements(app: App): void {
-  const cronExpr = process.env.ANNOUNCEMENT_CRON;
-  const channel = process.env.ANNOUNCEMENT_CHANNEL;
-  const text = process.env.ANNOUNCEMENT_TEXT;
-
-  if (!cronExpr || !channel || !text) {
-    console.warn(
-      "[reminders] Missing one or more env vars: ANNOUNCEMENT_CRON, ANNOUNCEMENT_CHANNEL,ANNOUNCEMENT_TEXT. Scheduled announcements disabled.",
+function matchesNow(cronExpr: string | String): boolean {
+  try {
+    const interval = cronParser.parseExpression(cronExpr.toString(), {
+      utc: true,
+    });
+    const prev = interval.prev().toDate();
+    const now = new Date();
+    return (
+      prev.getUTCFullYear() === now.getUTCFullYear() &&
+      prev.getUTCMonth() === now.getUTCMonth() &&
+      prev.getUTCDate() === now.getUTCDate() &&
+      prev.getUTCHours() === now.getUTCHours() &&
+      prev.getUTCMinutes() === now.getUTCMinutes()
     );
-    return;
+  } catch {
+    return false;
   }
+}
 
-  cron.schedule(cronExpr, async () => {
+export function startDynamicScheduler(app: App): void {
+  cron.schedule("* * * * *", async () => {
+    const now = new Date();
+
+    let reminders;
     try {
-      await app.client.chat.postMessage({ channel, text });
-      console.log(`[reminders] Announcement sent to ${channel}`);
-    } catch (err) {
-      console.error("[reminders] Failed to send announcement:", err);
+      reminders = await Reminder.find({ enabled: true });
+    } catch {
+      console.error("[scheduler] DB query failed");
+      return;
+    }
+
+    for (const reminder of reminders) {
+      if (reminder.startDate && now < reminder.startDate) continue;
+      if (reminder.endDate && now > reminder.endDate) continue;
+      if (!matchesNow(reminder.cron)) continue;
+
+      try {
+        await app.client.chat.postMessage({
+          channel: reminder.channel.toString(),
+          text: reminder.text.toString(),
+        });
+        console.log(
+          `[scheduler] Fired reminder ${reminder._id} to ${reminder.channel}`,
+        );
+      } catch (err) {
+        console.error(
+          `[scheduler] Failed to post reminder ${reminder._id}:`,
+          err,
+        );
+      }
     }
   });
 
-  console.log(`[reminders] Scheduled announcements active (${cronExpr})`);
+  console.log("[scheduler] Dynamic scheduler active");
+}
+
+export function startScheduledAnnouncements(app: App): void {
+  startDynamicScheduler(app);
 }
