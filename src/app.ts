@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { App } from "@slack/bolt";
-import { startSchdeuledAnnouncements } from "./schedulers/reminders";
+import { connectDB } from "./db";
+import { startDynamicScheduler } from "./schedulers/reminders";
 import { setupMemberOnboarding } from "./listeners/member_joined";
 import { registerCommands } from "./commands/index";
-import { connectDB } from "./db/index";
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN!,
@@ -17,7 +17,6 @@ registerCommands(app);
 
 app.message(async ({ message, say }) => {
   if ("text" in message && message.user) {
-    console.log(`Received: "${message.text}" from user ${message.user}`);
     await say(`Hey <@${message.user}>, I got your message!`);
   }
 });
@@ -25,6 +24,6 @@ app.message(async ({ message, say }) => {
 (async () => {
   await connectDB();
   await app.start();
-  console.log(`Bbot running in (Socket Mode) running `);
-  startSchdeuledAnnouncements(app);
+  console.log("[app] Bbot running in Socket Mode");
+  startDynamicScheduler(app);
 })();
